@@ -1,117 +1,172 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useState} from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
+type Task = {
+  id: number;
   title: string;
-}>;
+  completed: boolean;
+};
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+const App = () => {
+  const [task, setTask] = useState<string>('');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editTaskId, setEditTaskId] = useState<number | null>(null);
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const addTask = () => {
+    if (task.length > 0) {
+      if (isEditing && editTaskId !== null) {
+        setTasks(
+          tasks.map(t => (t.id === editTaskId ? {...t, title: task} : t)),
+        );
+        setIsEditing(false);
+        setEditTaskId(null);
+      } else {
+        setTasks([
+          ...tasks,
+          {id: tasks.length + 1, title: task, completed: false},
+        ]);
+      }
+      setTask('');
+    }
+  };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const removeTask = (id: number) => {
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  const toggleTaskCompletion = (id: number) => {
+    setTasks(
+      tasks.map(task =>
+        task.id === id ? {...task, completed: !task.completed} : task,
+      ),
+    );
+  };
+
+  const initiateEditTask = (id: number, title: string) => {
+    setTask(title);
+    setIsEditing(true);
+    setEditTaskId(id);
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={styles.container}>
+      <Text style={styles.heading}>To-Do List</Text>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Add or edit a task"
+          placeholderTextColor={'#000000'} // Ubah warna placeholder menjadi hitam
+          value={task}
+          onChangeText={text => setTask(text)}
+        />
+        <TouchableOpacity style={styles.addButton} onPress={addTask}>
+          <Text style={styles.addButtonText}>
+            {isEditing ? 'Update' : 'Add'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={tasks}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({item}) => (
+          <View style={styles.taskContainer}>
+            <TouchableOpacity onPress={() => toggleTaskCompletion(item.id)}>
+              <Text
+                style={[
+                  styles.taskText,
+                  item.completed && styles.completedTask,
+                ]}>
+                {item.title}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                onPress={() => initiateEditTask(item.id, item.title)}>
+                <Text style={styles.editButton}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeTask(item.id)}>
+                <Text style={styles.removeButton}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    backgroundColor: '#D2B48C',
+    paddingTop: 40,
+    paddingHorizontal: 10,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  heading: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#000000',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
+  inputContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    color: '#000000',
+  },
+  input: {
+    flex: 1,
+    borderColor: '#000000',
+    borderWidth: 2,
+    padding: 10,
+    borderRadius: 10,
+    color: '#000000',
     fontWeight: '400',
   },
-  highlight: {
-    fontWeight: '700',
+  addButton: {
+    backgroundColor: '#B0E0E6',
+    padding: 15,
+    borderRadius: 10,
+    marginLeft: 15,
+    borderWidth: 2,
+  },
+  addButtonText: {
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  taskContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomColor: '#000000',
+    borderBottomWidth: 1,
+  },
+  taskText: {
+    fontSize: 18,
+    color: '#000000',
+  },
+  completedTask: {
+    textDecorationLine: 'line-through',
+    color: '#000000',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+  },
+  editButton: {
+    color: 'blue',
+    marginRight: 10,
+  },
+  removeButton: {
+    color: 'red',
   },
 });
 
